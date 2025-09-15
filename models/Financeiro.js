@@ -9,23 +9,24 @@ class Financeiro {
       
       const query = `
         SELECT 
-          c.cod_pessoa,
-          p.nome,
-          c.cod_curso,
-          cur.nome as nome_curso,
-          c.cod_turma,
-          c.tipo_cobranca as tipo_debito,
-          c.valor as valor_original,
-          c.valor_pago,
-          FORMAT(c.data_vencimento, 'dd/MM/yyyy') as data_vencimento,
-          FORMAT(c.data_pagamento, 'dd/MM/yyyy') as data_pagamento,
-          c.status as status_pagamento,
-          c.observacao
-        FROM dbo.cobranca c
-        INNER JOIN dbo.pessoa p ON c.cod_pessoa = p.cod_pessoa
-        LEFT JOIN dbo.Curso cur ON c.cod_curso = cur.cod_curso
-        LEFT JOIN dbo.Turma t ON c.cod_turma = t.cod_turma
-        ORDER BY p.nome, c.data_vencimento DESC
+          cb.cod_pessoa,
+          p.nome AS nome_pessoa,
+          cb.cod_servico,
+          cb.parcela,
+          cb.status,
+          c.nome AS nome_curso,
+          t.cod_curso,
+          FORMAT(cb.data_vencimento, 'dd/MM/yyyy') AS data_vencimento,
+          cb.valor_bruto,
+          cb.valor_desconto,
+          cb.valor_pago,
+          cb.cod_turma,
+          cb.status_cobranca
+        FROM dbo.cobranca cb
+        JOIN dbo.Turma t ON cb.cod_turma = t.cod_turma
+        JOIN dbo.Curso c ON t.cod_curso = c.cod_curso
+        JOIN dbo.Pessoa p ON cb.cod_pessoa = p.cod_pessoa
+        ORDER BY p.nome, cb.data_vencimento DESC
         OFFSET @offset ROWS
         FETCH NEXT @limit ROWS ONLY
       `;
@@ -60,20 +61,18 @@ class Financeiro {
       
       const query = `
         SELECT 
-          c.cod_pessoa, p.nome, c.cod_curso, cur.nome as nome_curso,
-          c.cod_turma, c.tipo_cobranca as tipo_debito, c.valor as valor_original, c.valor_pago,
-          FORMAT(c.data_vencimento, 'dd/MM/yyyy') as data_vencimento,
-          FORMAT(c.data_pagamento, 'dd/MM/yyyy') as data_pagamento,
-          c.status as status_pagamento, c.observacao
-        FROM dbo.cobranca c
-        INNER JOIN dbo.pessoa p ON c.cod_pessoa = p.cod_pessoa
-        LEFT JOIN dbo.Curso cur ON c.cod_curso = cur.cod_curso
-        LEFT JOIN dbo.Turma t ON c.cod_turma = t.cod_turma
-        WHERE c.cod_pessoa = @codPessoa
-        ORDER BY c.data_vencimento DESC
+          cb.cod_pessoa, p.nome AS nome_pessoa, cb.cod_servico, cb.parcela, cb.status,
+          c.nome AS nome_curso, t.cod_curso, FORMAT(cb.data_vencimento, 'dd/MM/yyyy') AS data_vencimento,
+          cb.valor_bruto, cb.valor_desconto, cb.valor_pago, cb.cod_turma, cb.status_cobranca
+        FROM dbo.cobranca cb
+        JOIN dbo.Turma t ON cb.cod_turma = t.cod_turma
+        JOIN dbo.Curso c ON t.cod_curso = c.cod_curso
+        JOIN dbo.Pessoa p ON cb.cod_pessoa = p.cod_pessoa
+        WHERE cb.cod_pessoa = @codPessoa
+        ORDER BY cb.data_vencimento DESC
         OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`;
       
-      const countQuery = `SELECT COUNT(*) as total FROM dbo.cobranca c WHERE c.cod_pessoa = @codPessoa`;
+      const countQuery = `SELECT COUNT(*) as total FROM dbo.cobranca cb WHERE cb.cod_pessoa = @codPessoa`;
       
       const result = await pool.request()
         .input('codPessoa', sql.Int, codPessoa)
@@ -105,22 +104,20 @@ class Financeiro {
       
       const query = `
         SELECT 
-          c.cod_pessoa, p.nome, c.cod_curso, cur.nome as nome_curso,
-          c.cod_turma, c.tipo_cobranca as tipo_debito, c.valor as valor_original, c.valor_pago,
-          FORMAT(c.data_vencimento, 'dd/MM/yyyy') as data_vencimento,
-          FORMAT(c.data_pagamento, 'dd/MM/yyyy') as data_pagamento,
-          c.status as status_pagamento, c.observacao
-        FROM dbo.cobranca c
-        INNER JOIN dbo.pessoa p ON c.cod_pessoa = p.cod_pessoa
-        LEFT JOIN dbo.Curso cur ON c.cod_curso = cur.cod_curso
-        LEFT JOIN dbo.Turma t ON c.cod_turma = t.cod_turma
+          cb.cod_pessoa, p.nome AS nome_pessoa, cb.cod_servico, cb.parcela, cb.status,
+          c.nome AS nome_curso, t.cod_curso, FORMAT(cb.data_vencimento, 'dd/MM/yyyy') AS data_vencimento,
+          cb.valor_bruto, cb.valor_desconto, cb.valor_pago, cb.cod_turma, cb.status_cobranca
+        FROM dbo.cobranca cb
+        JOIN dbo.Turma t ON cb.cod_turma = t.cod_turma
+        JOIN dbo.Curso c ON t.cod_curso = c.cod_curso
+        JOIN dbo.Pessoa p ON cb.cod_pessoa = p.cod_pessoa
         WHERE p.nome LIKE @nome
-        ORDER BY p.nome, c.data_vencimento DESC
+        ORDER BY p.nome, cb.data_vencimento DESC
         OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`;
       
       const countQuery = `
-        SELECT COUNT(*) as total FROM dbo.cobranca c
-        INNER JOIN dbo.pessoa p ON c.cod_pessoa = p.cod_pessoa
+        SELECT COUNT(*) as total FROM dbo.cobranca cb
+        INNER JOIN dbo.pessoa p ON cb.cod_pessoa = p.cod_pessoa
         WHERE p.nome LIKE @nome`;
       
       const result = await pool.request()
