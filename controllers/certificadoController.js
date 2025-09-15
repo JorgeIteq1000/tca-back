@@ -1,35 +1,30 @@
 const { Certificado } = require('../models');
 
 const certificadoController = {
-  // Buscar certificados por nome ou código de pessoa
   async buscarCertificados(req, res) {
     try {
-      const { busca, page = 1, limit = 10 } = req.query;
-      
-      if (!busca) {
-        return res.status(400).json({
-          success: false,
-          message: 'Parâmetro de busca é obrigatório'
-        });
-      }
+      const { search, page = 1, limit = 10 } = req.query;
 
       let resultado;
-      
-      // Verificar se é um número (código de pessoa) ou texto (nome)
-      if (!isNaN(busca)) {
-        resultado = await Certificado.buscarPorPessoa(parseInt(busca), parseInt(page), parseInt(limit));
+
+      if (search && search.trim()) {
+        if (!isNaN(search)) {
+          resultado = await Certificado.buscarPorPessoa(parseInt(search), parseInt(page), parseInt(limit));
+        } else {
+          resultado = await Certificado.buscarPorNome(search, parseInt(page), parseInt(limit));
+        }
       } else {
-        resultado = await Certificado.buscarPorNome(busca, parseInt(page), parseInt(limit));
+        resultado = await Certificado.findAll(parseInt(page), parseInt(limit));
       }
 
       res.json({
         success: true,
         data: resultado.data,
         pagination: {
-          page: resultado.page,
-          limit: resultado.limit,
-          total: resultado.total,
-          totalPages: resultado.totalPages
+          currentPage: resultado.page,
+          totalPages: resultado.totalPages,
+          totalRecords: resultado.total,
+          pageSize: resultado.limit
         }
       });
     } catch (error) {
@@ -42,7 +37,6 @@ const certificadoController = {
     }
   },
 
-  // Obter sugestões para autocomplete
   async obterSugestoes(req, res) {
     try {
       const { termo } = req.query;
@@ -72,4 +66,3 @@ const certificadoController = {
 };
 
 module.exports = certificadoController;
-

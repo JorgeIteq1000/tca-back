@@ -1,47 +1,85 @@
-const { sql, poolPromise } = require('../config/database');
+const { sql, getPool } = require('../config/database');
 
 class Financeiro {
-  static async buscarPorPessoa(codPessoa, page = 1, limit = 10) {
+
+  static async findAll(page = 1, limit = 10) {
     try {
-      const pool = await poolPromise;
+      const pool = await getPool();
       const offset = (page - 1) * limit;
       
       const query = `
         SELECT 
-          f.cod_pessoa,
+          c.cod_pessoa,
           p.nome,
-          f.cod_curso,
-          c.nome as nome_curso,
-          f.cod_turma,
-          f.tipo_debito,
-          f.valor_original,
-          f.valor_pago,
-          FORMAT(f.data_vencimento, 'dd/MM/yyyy') as data_vencimento,
-          FORMAT(f.data_pagamento, 'dd/MM/yyyy') as data_pagamento,
-          f.status_pagamento,
-          f.observacao
-        FROM dbo.Financeiro f
-        INNER JOIN dbo.pessoa p ON f.cod_pessoa = p.cod_pessoa
-        JOIN dbo.Curso c ON f.cod_curso = c.cod_curso
-        JOIN dbo.Turma t ON f.cod_turma = t.cod_turma
-        WHERE f.cod_pessoa = @codPessoa
-        ORDER BY f.data_vencimento DESC
+          c.cod_curso,
+          cur.nome as nome_curso,
+          c.cod_turma,
+          c.tipo_cobranca as tipo_debito,
+          c.valor as valor_original,
+          c.valor_pago,
+          FORMAT(c.data_vencimento, 'dd/MM/yyyy') as data_vencimento,
+          FORMAT(c.data_pagamento, 'dd/MM/yyyy') as data_pagamento,
+          c.status as status_pagamento,
+          c.observacao
+        FROM dbo.cobranca c
+        INNER JOIN dbo.pessoa p ON c.cod_pessoa = p.cod_pessoa
+        LEFT JOIN dbo.Curso cur ON c.cod_curso = cur.cod_curso
+        LEFT JOIN dbo.Turma t ON c.cod_turma = t.cod_turma
+        ORDER BY p.nome, c.data_vencimento DESC
         OFFSET @offset ROWS
         FETCH NEXT @limit ROWS ONLY
       `;
+      
+      const countQuery = `SELECT COUNT(*) as total FROM dbo.cobranca`;
+
+      const result = await pool.request()
+        .input('offset', sql.Int, offset)
+        .input('limit', sql.Int, limit)
+        .query(query);
+
+      const countResult = await pool.request().query(countQuery);
+      const total = countResult.recordset[0].total;
+
+      return {
+        data: result.recordset,
+        total: total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      };
+    } catch (error) {
+      console.error('Erro ao buscar todos os dados financeiros:', error);
+      throw error;
+    }
+  }
+
+  static async buscarPorPessoa(codPessoa, page = 1, limit = 10) {
+    try {
+      const pool = await getPool();
+      const offset = (page - 1) * limit;
+      
+      const query = `
+        SELECT 
+          c.cod_pessoa, p.nome, c.cod_curso, cur.nome as nome_curso,
+          c.cod_turma, c.tipo_cobranca as tipo_debito, c.valor as valor_original, c.valor_pago,
+          FORMAT(c.data_vencimento, 'dd/MM/yyyy') as data_vencimento,
+          FORMAT(c.data_pagamento, 'dd/MM/yyyy') as data_pagamento,
+          c.status as status_pagamento, c.observacao
+        FROM dbo.cobranca c
+        INNER JOIN dbo.pessoa p ON c.cod_pessoa = p.cod_pessoa
+        LEFT JOIN dbo.Curso cur ON c.cod_curso = cur.cod_curso
+        LEFT JOIN dbo.Turma t ON c.cod_turma = t.cod_turma
+        WHERE c.cod_pessoa = @codPessoa
+        ORDER BY c.data_vencimento DESC
+        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`;
+      
+      const countQuery = `SELECT COUNT(*) as total FROM dbo.cobranca c WHERE c.cod_pessoa = @codPessoa`;
       
       const result = await pool.request()
         .input('codPessoa', sql.Int, codPessoa)
         .input('offset', sql.Int, offset)
         .input('limit', sql.Int, limit)
         .query(query);
-      
-      // Contar total de registros
-      const countQuery = `
-        SELECT COUNT(*) as total
-        FROM dbo.Financeiro f
-        WHERE f.cod_pessoa = @codPessoa
-      `;
       
       const countResult = await pool.request()
         .input('codPessoa', sql.Int, codPessoa)
@@ -62,46 +100,34 @@ class Financeiro {
 
   static async buscarPorNome(nome, page = 1, limit = 10) {
     try {
-      const pool = await poolPromise;
+      const pool = await getPool();
       const offset = (page - 1) * limit;
       
       const query = `
         SELECT 
-          f.cod_pessoa,
-          p.nome,
-          f.cod_curso,
-          c.nome as nome_curso,
-          f.cod_turma,
-          f.tipo_debito,
-          f.valor_original,
-          f.valor_pago,
-          FORMAT(f.data_vencimento, 'dd/MM/yyyy') as data_vencimento,
-          FORMAT(f.data_pagamento, 'dd/MM/yyyy') as data_pagamento,
-          f.status_pagamento,
-          f.observacao
-        FROM dbo.Financeiro f
-        INNER JOIN dbo.pessoa p ON f.cod_pessoa = p.cod_pessoa
-        JOIN dbo.Curso c ON f.cod_curso = c.cod_curso
-        JOIN dbo.Turma t ON f.cod_turma = t.cod_turma
+          c.cod_pessoa, p.nome, c.cod_curso, cur.nome as nome_curso,
+          c.cod_turma, c.tipo_cobranca as tipo_debito, c.valor as valor_original, c.valor_pago,
+          FORMAT(c.data_vencimento, 'dd/MM/yyyy') as data_vencimento,
+          FORMAT(c.data_pagamento, 'dd/MM/yyyy') as data_pagamento,
+          c.status as status_pagamento, c.observacao
+        FROM dbo.cobranca c
+        INNER JOIN dbo.pessoa p ON c.cod_pessoa = p.cod_pessoa
+        LEFT JOIN dbo.Curso cur ON c.cod_curso = cur.cod_curso
+        LEFT JOIN dbo.Turma t ON c.cod_turma = t.cod_turma
         WHERE p.nome LIKE @nome
-        ORDER BY p.nome, f.data_vencimento DESC
-        OFFSET @offset ROWS
-        FETCH NEXT @limit ROWS ONLY
-      `;
+        ORDER BY p.nome, c.data_vencimento DESC
+        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`;
+      
+      const countQuery = `
+        SELECT COUNT(*) as total FROM dbo.cobranca c
+        INNER JOIN dbo.pessoa p ON c.cod_pessoa = p.cod_pessoa
+        WHERE p.nome LIKE @nome`;
       
       const result = await pool.request()
         .input('nome', sql.VarChar, `%${nome}%`)
         .input('offset', sql.Int, offset)
         .input('limit', sql.Int, limit)
         .query(query);
-      
-      // Contar total de registros
-      const countQuery = `
-        SELECT COUNT(*) as total
-        FROM dbo.Financeiro f
-        INNER JOIN dbo.pessoa p ON f.cod_pessoa = p.cod_pessoa
-        WHERE p.nome LIKE @nome
-      `;
       
       const countResult = await pool.request()
         .input('nome', sql.VarChar, `%${nome}%`)
@@ -122,15 +148,15 @@ class Financeiro {
 
   static async obterSugestoes(termo) {
     try {
-      const pool = await poolPromise;
+      const pool = await getPool();
       
       const query = `
         SELECT DISTINCT TOP 10
-          p.cod_pessoa,
+          p.cod_pessoa as id,
           p.nome
-        FROM dbo.Financeiro f
-        INNER JOIN dbo.pessoa p ON f.cod_pessoa = p.cod_pessoa
-        WHERE p.nome LIKE @termo
+        FROM dbo.cobranca c
+        INNER JOIN dbo.pessoa p ON c.cod_pessoa = p.cod_pessoa
+        WHERE p.nome LIKE @termo OR CAST(p.cod_pessoa AS VARCHAR) LIKE @termo
         ORDER BY p.nome
       `;
       
@@ -147,4 +173,3 @@ class Financeiro {
 }
 
 module.exports = Financeiro;
-

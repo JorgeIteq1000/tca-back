@@ -1,35 +1,30 @@
 const { NotaFalta } = require('../models');
 
 const notaFaltaController = {
-  // Buscar notas/faltas por nome ou código de pessoa
   async buscarNotasFaltas(req, res) {
     try {
-      const { busca, page = 1, limit = 10 } = req.query;
-      
-      if (!busca) {
-        return res.status(400).json({
-          success: false,
-          message: 'Parâmetro de busca é obrigatório'
-        });
-      }
+      const { search, page = 1, limit = 10 } = req.query;
 
       let resultado;
-      
-      // Verificar se é um número (código de pessoa) ou texto (nome)
-      if (!isNaN(busca)) {
-        resultado = await NotaFalta.buscarPorPessoa(parseInt(busca), parseInt(page), parseInt(limit));
+
+      if (search && search.trim()) {
+        if (!isNaN(search)) {
+          resultado = await NotaFalta.buscarPorPessoa(parseInt(search), parseInt(page), parseInt(limit));
+        } else {
+          resultado = await NotaFalta.buscarPorNome(search, parseInt(page), parseInt(limit));
+        }
       } else {
-        resultado = await NotaFalta.buscarPorNome(busca, parseInt(page), parseInt(limit));
+        resultado = await NotaFalta.findAll(parseInt(page), parseInt(limit));
       }
 
       res.json({
         success: true,
         data: resultado.data,
         pagination: {
-          page: resultado.page,
-          limit: resultado.limit,
-          total: resultado.total,
-          totalPages: resultado.totalPages
+          currentPage: resultado.page,
+          totalPages: resultado.totalPages,
+          totalRecords: resultado.total,
+          pageSize: resultado.limit
         }
       });
     } catch (error) {
@@ -42,7 +37,6 @@ const notaFaltaController = {
     }
   },
 
-  // Obter sugestões para autocomplete
   async obterSugestoes(req, res) {
     try {
       const { termo } = req.query;
@@ -72,4 +66,3 @@ const notaFaltaController = {
 };
 
 module.exports = notaFaltaController;
-

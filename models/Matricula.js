@@ -8,19 +8,22 @@ class Matricula {
       
       const query = `
         SELECT 
-          m.cod_pessoa, p.nome, m.cod_curso, c.nome as nome_curso,
-          m.cod_turma, m.status, FORMAT(m.data_matricula, 'dd/MM/yyyy') as data_matricula,
-          FORMAT(m.data_conclusao, 'dd/MM/yyyy') as data_conclusao,
-          m.periodo_letivo, m.tipo_matricula, m.observacao
-        FROM dbo.Matricula m
-        INNER JOIN dbo.pessoa p ON m.cod_pessoa = p.cod_pessoa
-        JOIN dbo.Curso c ON m.cod_curso = c.cod_curso
-        JOIN dbo.Turma t ON m.cod_turma = t.cod_turma
-        WHERE m.cod_pessoa = @codPessoa
+          m.matricula_aluno,
+          p.nome,
+          m.cod_turma,
+          t.cod_curso,
+          c.nome as nome_curso,
+          m.situacao,
+          FORMAT(m.data_matricula, 'dd/MM/yyyy') as data_matricula
+        FROM dbo.matricula m
+        INNER JOIN dbo.pessoa p ON m.matricula_aluno = p.cod_pessoa
+        JOIN dbo.turma t ON m.cod_turma = t.cod_turma
+        JOIN dbo.curso c ON t.cod_curso = c.cod_curso
+        WHERE m.matricula_aluno = @codPessoa
         ORDER BY m.data_matricula DESC
         OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`;
       
-      const countQuery = `SELECT COUNT(*) as total FROM dbo.Matricula m WHERE m.cod_pessoa = @codPessoa`;
+      const countQuery = `SELECT COUNT(*) as total FROM dbo.matricula m WHERE m.matricula_aluno = @codPessoa`;
       
       const result = await pool.request()
         .input('codPessoa', sql.Int, codPessoa)
@@ -52,21 +55,24 @@ class Matricula {
       
       const query = `
         SELECT 
-          m.cod_pessoa, p.nome, m.cod_curso, c.nome as nome_curso,
-          m.cod_turma, m.status, FORMAT(m.data_matricula, 'dd/MM/yyyy') as data_matricula,
-          FORMAT(m.data_conclusao, 'dd/MM/yyyy') as data_conclusao,
-          m.periodo_letivo, m.tipo_matricula, m.observacao
-        FROM dbo.Matricula m
-        INNER JOIN dbo.pessoa p ON m.cod_pessoa = p.cod_pessoa
-        JOIN dbo.Curso c ON m.cod_curso = c.cod_curso
-        JOIN dbo.Turma t ON m.cod_turma = t.cod_turma
+          m.matricula_aluno,
+          p.nome,
+          m.cod_turma,
+          t.cod_curso,
+          c.nome as nome_curso,
+          m.situacao,
+          FORMAT(m.data_matricula, 'dd/MM/yyyy') as data_matricula
+        FROM dbo.matricula m
+        INNER JOIN dbo.pessoa p ON m.matricula_aluno = p.cod_pessoa
+        JOIN dbo.turma t ON m.cod_turma = t.cod_turma
+        JOIN dbo.curso c ON t.cod_curso = c.cod_curso
         WHERE p.nome LIKE @nome
         ORDER BY p.nome, m.data_matricula DESC
         OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`;
       
       const countQuery = `
-        SELECT COUNT(*) as total FROM dbo.Matricula m
-        INNER JOIN dbo.pessoa p ON m.cod_pessoa = p.cod_pessoa
+        SELECT COUNT(*) as total FROM dbo.matricula m
+        INNER JOIN dbo.pessoa p ON m.matricula_aluno = p.cod_pessoa
         WHERE p.nome LIKE @nome`;
       
       const result = await pool.request()
@@ -98,18 +104,22 @@ class Matricula {
         const offset = (page - 1) * limit;
         const query = `
             SELECT 
-                m.cod_pessoa, p.nome, m.cod_curso, c.nome as nome_curso,
-                m.cod_turma, m.status, FORMAT(m.data_matricula, 'dd/MM/yyyy') as data_matricula,
-                FORMAT(m.data_conclusao, 'dd/MM/yyyy') as data_conclusao,
-                m.periodo_letivo, m.tipo_matricula, m.observacao
-            FROM dbo.Matricula m
-            INNER JOIN dbo.pessoa p ON m.cod_pessoa = p.cod_pessoa
-            JOIN dbo.Curso c ON m.cod_curso = c.cod_curso
+                m.matricula_aluno,
+                p.nome,
+                m.cod_turma,
+                t.cod_curso,
+                c.nome as nome_curso,
+                m.situacao,
+                FORMAT(m.data_matricula, 'dd/MM/yyyy') as data_matricula
+            FROM dbo.matricula m
+            INNER JOIN dbo.pessoa p ON m.matricula_aluno = p.cod_pessoa
+            JOIN dbo.turma t ON m.cod_turma = t.cod_turma
+            JOIN dbo.curso c ON t.cod_curso = c.cod_curso
             ORDER BY p.nome
             OFFSET @offset ROWS
             FETCH NEXT @limit ROWS ONLY
         `;
-        const countQuery = `SELECT COUNT(*) as total FROM dbo.Matricula`;
+        const countQuery = `SELECT COUNT(*) as total FROM dbo.matricula`;
         
         const result = await pool.request().input('offset', sql.Int, offset).input('limit', sql.Int, limit).query(query);
         const countResult = await pool.request().query(countQuery);
@@ -138,8 +148,8 @@ class Matricula {
         SELECT DISTINCT TOP 10
           p.cod_pessoa as id,
           p.nome
-        FROM dbo.Matricula m
-        INNER JOIN dbo.pessoa p ON m.cod_pessoa = p.cod_pessoa
+        FROM dbo.matricula m
+        INNER JOIN dbo.pessoa p ON m.matricula_aluno = p.cod_pessoa
         WHERE p.nome LIKE @termo OR CAST(p.cod_pessoa AS VARCHAR) LIKE @termo
         ORDER BY p.nome
       `;

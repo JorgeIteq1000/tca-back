@@ -1,11 +1,11 @@
-const { sql, poolPromise } = require('../config/database');
+const { sql, getPool } = require('../config/database');
 
 class NotaFalta {
-  static async buscarPorPessoa(codPessoa, page = 1, limit = 10) {
+  static async findAll(page = 1, limit = 10) {
     try {
-      const pool = await poolPromise;
+      const pool = await getPool();
       const offset = (page - 1) * limit;
-      
+
       const query = `
         SELECT 
           nf.matricula_aluno,
@@ -16,22 +16,65 @@ class NotaFalta {
           c.nome as nome_curso,
           nf.cod_disciplina,
           d.nome as nome_disciplina,
-          nf.situacao,
-          nf.carga_horaria,
-          ae.descricao_atividade,
-          FORMAT(ae.data_atividade, 'dd/MM/yyyy') as data_atividade,
-          ae.carga_horaria as carga_horaria_extra,
-          ae.tipo_atividade
+          nf.situacao
         FROM dbo.NotaFalta nf
         INNER JOIN dbo.pessoa p ON nf.matricula_aluno = p.cod_pessoa
         JOIN dbo.Disciplina d ON nf.cod_disciplina = d.cod_disciplina
         JOIN dbo.Turma t ON nf.cod_turma = t.cod_turma
         JOIN dbo.Curso c ON t.cod_curso = c.cod_curso
-        LEFT JOIN dbo.Aluno_AtividadesExtras ae ON nf.matricula_aluno = ae.matricula_aluno AND nf.cod_turma = ae.cod_turma
+        ORDER BY p.nome, c.nome, d.nome
+        OFFSET @offset ROWS
+        FETCH NEXT @limit ROWS ONLY
+      `;
+
+      const countQuery = `SELECT COUNT(*) as total FROM dbo.NotaFalta`;
+      
+      const result = await pool.request()
+        .input('offset', sql.Int, offset)
+        .input('limit', sql.Int, limit)
+        .query(query);
+
+      const countResult = await pool.request().query(countQuery);
+      const total = countResult.recordset[0].total;
+      
+      return {
+        data: result.recordset,
+        total: total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      };
+    } catch (error) {
+      console.error('Erro ao buscar todas as notas/faltas:', error);
+      throw error;
+    }
+  }
+
+  static async buscarPorPessoa(codPessoa, page = 1, limit = 10) {
+    try {
+      const pool = await getPool();
+      const offset = (page - 1) * limit;
+      
+      const query = `
+        SELECT 
+          nf.matricula_aluno, p.nome, nf.media_final, nf.cod_turma,
+          t.cod_curso, c.nome as nome_curso, nf.cod_disciplina,
+          d.nome as nome_disciplina, nf.situacao
+        FROM dbo.NotaFalta nf
+        INNER JOIN dbo.pessoa p ON nf.matricula_aluno = p.cod_pessoa
+        JOIN dbo.Disciplina d ON nf.cod_disciplina = d.cod_disciplina
+        JOIN dbo.Turma t ON nf.cod_turma = t.cod_turma
+        JOIN dbo.Curso c ON t.cod_curso = c.cod_curso
         WHERE p.cod_pessoa = @codPessoa
         ORDER BY c.nome, d.nome
         OFFSET @offset ROWS
         FETCH NEXT @limit ROWS ONLY
+      `;
+      
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM dbo.NotaFalta nf
+        WHERE nf.matricula_aluno = @codPessoa
       `;
       
       const result = await pool.request()
@@ -39,14 +82,6 @@ class NotaFalta {
         .input('offset', sql.Int, offset)
         .input('limit', sql.Int, limit)
         .query(query);
-      
-      // Contar total de registros
-      const countQuery = `
-        SELECT COUNT(*) as total
-        FROM dbo.NotaFalta nf
-        INNER JOIN dbo.pessoa p ON nf.matricula_aluno = p.cod_pessoa
-        WHERE p.cod_pessoa = @codPessoa
-      `;
       
       const countResult = await pool.request()
         .input('codPessoa', sql.Int, codPessoa)
@@ -67,35 +102,30 @@ class NotaFalta {
 
   static async buscarPorNome(nome, page = 1, limit = 10) {
     try {
-      const pool = await poolPromise;
+      const pool = await getPool();
       const offset = (page - 1) * limit;
       
       const query = `
         SELECT 
-          nf.matricula_aluno,
-          p.nome,
-          nf.media_final,
-          nf.cod_turma,
-          t.cod_curso,
-          c.nome as nome_curso,
-          nf.cod_disciplina,
-          d.nome as nome_disciplina,
-          nf.situacao,
-          nf.carga_horaria,
-          ae.descricao_atividade,
-          FORMAT(ae.data_atividade, 'dd/MM/yyyy') as data_atividade,
-          ae.carga_horaria as carga_horaria_extra,
-          ae.tipo_atividade
+          nf.matricula_aluno, p.nome, nf.media_final, nf.cod_turma,
+          t.cod_curso, c.nome as nome_curso, nf.cod_disciplina,
+          d.nome as nome_disciplina, nf.situacao
         FROM dbo.NotaFalta nf
         INNER JOIN dbo.pessoa p ON nf.matricula_aluno = p.cod_pessoa
         JOIN dbo.Disciplina d ON nf.cod_disciplina = d.cod_disciplina
         JOIN dbo.Turma t ON nf.cod_turma = t.cod_turma
         JOIN dbo.Curso c ON t.cod_curso = c.cod_curso
-        LEFT JOIN dbo.Aluno_AtividadesExtras ae ON nf.matricula_aluno = ae.matricula_aluno AND nf.cod_turma = ae.cod_turma
         WHERE p.nome LIKE @nome
         ORDER BY p.nome, c.nome, d.nome
         OFFSET @offset ROWS
         FETCH NEXT @limit ROWS ONLY
+      `;
+      
+      const countQuery = `
+        SELECT COUNT(*) as total
+        FROM dbo.NotaFalta nf
+        INNER JOIN dbo.pessoa p ON nf.matricula_aluno = p.cod_pessoa
+        WHERE p.nome LIKE @nome
       `;
       
       const result = await pool.request()
@@ -103,14 +133,6 @@ class NotaFalta {
         .input('offset', sql.Int, offset)
         .input('limit', sql.Int, limit)
         .query(query);
-      
-      // Contar total de registros
-      const countQuery = `
-        SELECT COUNT(*) as total
-        FROM dbo.NotaFalta nf
-        INNER JOIN dbo.pessoa p ON nf.matricula_aluno = p.cod_pessoa
-        WHERE p.nome LIKE @nome
-      `;
       
       const countResult = await pool.request()
         .input('nome', sql.VarChar, `%${nome}%`)
@@ -131,15 +153,15 @@ class NotaFalta {
 
   static async obterSugestoes(termo) {
     try {
-      const pool = await poolPromise;
+      const pool = await getPool();
       
       const query = `
         SELECT DISTINCT TOP 10
-          p.cod_pessoa,
+          p.cod_pessoa as id,
           p.nome
         FROM dbo.NotaFalta nf
         INNER JOIN dbo.pessoa p ON nf.matricula_aluno = p.cod_pessoa
-        WHERE p.nome LIKE @termo
+        WHERE p.nome LIKE @termo OR CAST(p.cod_pessoa AS VARCHAR) LIKE @termo
         ORDER BY p.nome
       `;
       
@@ -156,4 +178,3 @@ class NotaFalta {
 }
 
 module.exports = NotaFalta;
-
