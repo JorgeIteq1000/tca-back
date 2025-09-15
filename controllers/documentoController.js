@@ -7,14 +7,15 @@ class DocumentoController {
       const { termo } = req.query;
       
       if (!termo || termo.length < 2) {
-        return res.json([]);
+        return res.json({ success: true, data: [] });
       }
       
       const suggestions = await Documento.searchSuggestions(termo);
-      res.json(suggestions);
+      res.json({ success: true, data: suggestions });
     } catch (error) {
       console.error('Erro ao buscar sugestões de documentos:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível buscar as sugestões'
       });
@@ -32,23 +33,20 @@ class DocumentoController {
       let result;
       
       if (search && search.trim()) {
-        // Se há termo de busca, buscar por nome da pessoa
         result = await Documento.findByPersonName(search.trim(), pageNum, pageSizeNum);
       } else {
-        // Se não há termo de busca, listar todos
         result = await Documento.findAll(pageNum, pageSizeNum);
       }
       
       res.json({
+        success: true,
         data: result.data,
-        currentPage: result.pagination.currentPage,
-        totalPages: result.pagination.totalPages,
-        totalRecords: result.pagination.totalRecords,
-        pageSize: result.pagination.pageSize
+        pagination: result.pagination
       });
     } catch (error) {
       console.error('Erro ao buscar dados de documentos:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível buscar os dados'
       });
@@ -62,10 +60,11 @@ class DocumentoController {
       
       const documentos = await Documento.findByPersonId(id);
       
-      res.json(documentos);
+      res.json({ success: true, data: documentos });
     } catch (error) {
       console.error('Erro ao buscar documentos por pessoa:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível buscar os documentos'
       });
@@ -74,4 +73,3 @@ class DocumentoController {
 }
 
 module.exports = DocumentoController;
-

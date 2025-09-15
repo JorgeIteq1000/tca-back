@@ -7,14 +7,15 @@ class PessoaController {
       const { termo } = req.query;
       
       if (!termo || termo.length < 2) {
-        return res.json([]);
+        return res.json({ success: true, data: [] });
       }
       
       const suggestions = await Pessoa.searchSuggestions(termo);
-      res.json(suggestions);
+      res.json({ success: true, data: suggestions });
     } catch (error) {
       console.error('Erro ao buscar sugestões de pessoas:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível buscar as sugestões'
       });
@@ -32,23 +33,20 @@ class PessoaController {
       let result;
       
       if (search && search.trim()) {
-        // Se há termo de busca, buscar por nome
         result = await Pessoa.findByName(search.trim(), pageNum, pageSizeNum);
       } else {
-        // Se não há termo de busca, listar todos
         result = await Pessoa.findAll(pageNum, pageSizeNum);
       }
       
       res.json({
+        success: true,
         data: result.data,
-        currentPage: result.pagination.currentPage,
-        totalPages: result.pagination.totalPages,
-        totalRecords: result.pagination.totalRecords,
-        pageSize: result.pagination.pageSize
+        pagination: result.pagination
       });
     } catch (error) {
       console.error('Erro ao buscar dados de pessoas:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível buscar os dados'
       });
@@ -64,15 +62,17 @@ class PessoaController {
       
       if (!pessoa) {
         return res.status(404).json({ 
+          success: false,
           error: 'Pessoa não encontrada',
           message: `Não foi encontrada pessoa com ID ${id}`
         });
       }
       
-      res.json(pessoa);
+      res.json({ success: true, data: pessoa });
     } catch (error) {
       console.error('Erro ao buscar pessoa por ID:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível buscar a pessoa'
       });
@@ -86,10 +86,11 @@ class PessoaController {
       
       const exists = await Pessoa.exists(id);
       
-      res.json({ exists });
+      res.json({ success: true, exists });
     } catch (error) {
       console.error('Erro ao verificar existência da pessoa:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível verificar a existência da pessoa'
       });
@@ -98,4 +99,3 @@ class PessoaController {
 }
 
 module.exports = PessoaController;
-

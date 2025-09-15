@@ -6,14 +6,13 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
 // Aplicar middleware de autenticação
 router.use(authenticateToken);
 
-// Aplicar middleware de autorização para admin (financeiro é restrito)
+// Aplicar middleware de autorização para admin
 router.use(requireAdmin);
 
-// GET /api/financeiro - Buscar dados financeiros
-router.get('/', financeiroController.buscarFinanceiro);
+// GET /api/dados/financeiro - Buscar dados financeiros
+router.get('/dados/financeiro', financeiroController.buscarFinanceiro);
 
-// GET /api/financeiro/sugestoes - Obter sugestões para autocomplete
-router.get('/sugestoes', financeiroController.obterSugestoes);
+// GET /api/sugestoes/financeiro - Obter sugestões para autocomplete
+router.get('/sugestoes/financeiro', financeiroController.obterSugestoes);
 
 module.exports = router;
-

@@ -34,27 +34,26 @@ router.get('/info', (req, res) => {
       pessoa: '/api/dados/pessoa, /api/sugestoes/pessoa, /api/pessoa/:id',
       documento: '/api/dados/documento, /api/sugestoes/documento, /api/documento/pessoa/:id',
       ocorrencia: '/api/dados/ocorrencia, /api/sugestoes/ocorrencia, /api/ocorrencias, /api/ocorrencia/aluno/:id',
-      certificado: '/api/certificado, /api/certificado/sugestoes',
-      notafalta: '/api/notafalta, /api/notafalta/sugestoes',
-      requerimento: '/api/requerimento, /api/requerimento/sugestoes',
-      matricula: '/api/matricula, /api/matricula/sugestoes',
-      financeiro: '/api/financeiro, /api/financeiro/sugestoes (admin only)',
+      certificado: '/api/dados/certificado, /api/sugestoes/certificado',
+      notafalta: '/api/dados/notafalta, /api/sugestoes/notafalta',
+      requerimento: '/api/dados/requerimento, /api/sugestoes/requerimento',
+      matricula: '/api/dados/matricula, /api/sugestoes/matricula',
+      financeiro: '/api/dados/financeiro, /api/sugestoes/financeiro (admin only)',
       buscarTudo: '/api/buscar-tudo'
     }
   });
 });
 
-// Configurar rotas
+// Configurar rotas (sem prefixos extras)
 router.use('/', authRoutes);
 router.use('/', pessoaRoutes);
 router.use('/', documentoRoutes);
 router.use('/', ocorrenciaRoutes);
-router.use('/certificado', certificadoRoutes);
-router.use('/notafalta', notaFaltaRoutes);
-router.use('/requerimento', requerimentoRoutes);
-router.use('/matricula', matriculaRoutes);
-router.use('/financeiro', financeiroRoutes);
+router.use('/', certificadoRoutes);
+router.use('/', notaFaltaRoutes);
+router.use('/', requerimentoRoutes);
+router.use('/', matriculaRoutes);
+router.use('/', financeiroRoutes);
 router.use('/buscar-tudo', buscarTudoRoutes);
 
 module.exports = router;
-

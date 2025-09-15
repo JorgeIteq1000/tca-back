@@ -6,11 +6,10 @@ const { authenticateToken } = require('../middleware/auth');
 // Aplicar middleware de autenticação
 router.use(authenticateToken);
 
-// GET /api/requerimento - Buscar requerimentos
-router.get('/', requerimentoController.buscarRequerimentos);
+// GET /api/dados/requerimento - Buscar requerimentos
+router.get('/dados/requerimento', requerimentoController.buscarRequerimentos);
 
-// GET /api/requerimento/sugestoes - Obter sugestões para autocomplete
-router.get('/sugestoes', requerimentoController.obterSugestoes);
+// GET /api/sugestoes/requerimento - Obter sugestões para autocomplete
+router.get('/sugestoes/requerimento', requerimentoController.obterSugestoes);
 
 module.exports = router;
-

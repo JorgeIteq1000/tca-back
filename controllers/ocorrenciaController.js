@@ -7,14 +7,15 @@ class OcorrenciaController {
       const { termo } = req.query;
       
       if (!termo || termo.length < 2) {
-        return res.json([]);
+        return res.json({ success: true, data: [] });
       }
       
       const suggestions = await Ocorrencia.searchSuggestions(termo);
-      res.json(suggestions);
+      res.json({ success: true, data: suggestions });
     } catch (error) {
       console.error('Erro ao buscar sugestões de ocorrências:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível buscar as sugestões'
       });
@@ -32,23 +33,20 @@ class OcorrenciaController {
       let result;
       
       if (search && search.trim()) {
-        // Se há termo de busca, buscar por nome do aluno
         result = await Ocorrencia.findByStudentName(search.trim(), pageNum, pageSizeNum);
       } else {
-        // Se não há termo de busca, listar todos
         result = await Ocorrencia.findAll(pageNum, pageSizeNum);
       }
       
       res.json({
+        success: true,
         data: result.data,
-        currentPage: result.pagination.currentPage,
-        totalPages: result.pagination.totalPages,
-        totalRecords: result.pagination.totalRecords,
-        pageSize: result.pagination.pageSize
+        pagination: result.pagination
       });
     } catch (error) {
       console.error('Erro ao buscar dados de ocorrências:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível buscar os dados'
       });
@@ -62,10 +60,11 @@ class OcorrenciaController {
       
       const ocorrencias = await Ocorrencia.findByStudentId(id);
       
-      res.json(ocorrencias);
+      res.json({ success: true, data: ocorrencias });
     } catch (error) {
       console.error('Erro ao buscar ocorrências por aluno:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível buscar as ocorrências'
       });
@@ -77,11 +76,11 @@ class OcorrenciaController {
     try {
       const { matricula_aluno, nome_aluno, data, descricao_novo, tipo, usuario } = req.body;
       
-      // Validação básica
       if (!matricula_aluno || !nome_aluno || !data || !descricao_novo || !tipo || !usuario) {
         return res.status(400).json({
+          success: false,
           error: 'Dados incompletos',
-          message: 'Todos os campos são obrigatórios: matricula_aluno, nome_aluno, data, descricao_novo, tipo, usuario'
+          message: 'Todos os campos são obrigatórios'
         });
       }
       
@@ -98,6 +97,7 @@ class OcorrenciaController {
     } catch (error) {
       console.error('Erro ao criar ocorrência:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível criar a ocorrência'
       });
@@ -115,23 +115,20 @@ class OcorrenciaController {
       let result;
       
       if (search && search.trim()) {
-        // Se há termo de busca, buscar por nome ou matrícula
         result = await Ocorrencia.searchNewOccurrences(search.trim(), pageNum, pageSizeNum);
       } else {
-        // Se não há termo de busca, listar todos
         result = await Ocorrencia.findNewOccurrences(pageNum, pageSizeNum);
       }
       
       res.json({
+        success: true,
         data: result.data,
-        currentPage: result.pagination.currentPage,
-        totalPages: result.pagination.totalPages,
-        totalRecords: result.pagination.totalRecords,
-        pageSize: result.pagination.pageSize
+        pagination: result.pagination
       });
     } catch (error) {
       console.error('Erro ao buscar dados de ocorrências novas:', error);
       res.status(500).json({ 
+        success: false,
         error: 'Erro interno do servidor',
         message: 'Não foi possível buscar os dados'
       });
@@ -140,4 +137,3 @@ class OcorrenciaController {
 }
 
 module.exports = OcorrenciaController;
-
