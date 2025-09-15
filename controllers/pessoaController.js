@@ -11,6 +11,10 @@ class PessoaController {
       }
       
       const suggestions = await Pessoa.searchSuggestions(termo);
+
+      // LOG: Desabilitando o cache para esta rota
+      res.set('Cache-Control', 'no-store');
+      
       res.json({ success: true, data: suggestions });
     } catch (error) {
       console.error('Erro ao buscar sugestões de pessoas:', error);

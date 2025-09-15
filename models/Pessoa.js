@@ -3,10 +3,11 @@ const { executeQuery, executeQueryWithNamedParams } = require('../config/databas
 class Pessoa {
   // Buscar pessoas por nome ou código (para sugestões)
   static async searchSuggestions(searchTerm) {
+    // LOG: Corrigindo a consulta para buscar por código como texto, sem alterar os nomes das colunas.
     const query = `
       SELECT TOP 10 cod_pessoa, nome 
       FROM dbo.pessoa 
-      WHERE nome LIKE @searchTerm OR cod_pessoa LIKE @searchTerm
+      WHERE nome LIKE @searchTerm OR CAST(cod_pessoa AS VARCHAR) LIKE @searchTerm
       ORDER BY nome
     `;
     
@@ -16,6 +17,7 @@ class Pessoa {
     
     try {
       const result = await executeQueryWithNamedParams(query, params);
+      // LOG: Este mapeamento agora funcionará, pois a coluna 'cod_pessoa' existe no resultado.
       return result.recordset.map(row => ({
         id: row.cod_pessoa,
         nome: row.nome
@@ -25,6 +27,7 @@ class Pessoa {
       throw error;
     }
   }
+
 
   // Buscar pessoa por código
   static async findById(codPessoa) {

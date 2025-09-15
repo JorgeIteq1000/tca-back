@@ -1,7 +1,7 @@
-const { Ocorrencia } = require('../models');
+const { Ocorrencia, Pessoa } = require('../models'); // Adicione Pessoa aqui
 
 class OcorrenciaController {
-  // GET /api/sugestoes/ocorrencia - Buscar sugestões de pessoas com ocorrências
+  // GET /api/sugestoes/ocorrencia - Buscar sugestões de TODAS as pessoas
   static async getSuggestions(req, res) {
     try {
       const { termo } = req.query;
@@ -10,10 +10,11 @@ class OcorrenciaController {
         return res.json({ success: true, data: [] });
       }
       
-      const suggestions = await Ocorrencia.searchSuggestions(termo);
+      // LOG: Alterado para buscar sugestões em todas as pessoas
+      const suggestions = await Pessoa.searchSuggestions(termo);
       res.json({ success: true, data: suggestions });
     } catch (error) {
-      console.error('Erro ao buscar sugestões de ocorrências:', error);
+      console.error('Erro ao buscar sugestões de pessoas para ocorrência:', error);
       res.status(500).json({ 
         success: false,
         error: 'Erro interno do servidor',
